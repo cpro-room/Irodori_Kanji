@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>漢字練習</title>
+
+<style>
+
+body {
+  font-family: "Yu Gothic", "Meiryo", sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+
+/* 課選択ボタン */
+
+.lesson-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.lesson-button {
+  font-size: 24px;
+  line-height: 1.1;
+  padding: 12px 25px;
+  border: 2px solid #999;
+  border-radius: 12px;
+  background: #eee;
+  color: #333;
+  cursor: pointer;
+}
+
+.lesson-button.active {
+  background: #333;
+  color: white;
+  border-color: #333;
+}
+
+
+/* 漢字 */
+
+.question {
+  font-size: clamp(100px, 30vw, 200px);
+  margin: 40px 0 10px;
+  line-height: 1.1;
+}
+
+
+/* 読み方 */
+
+.reading {
+  font-size: clamp(40px, 10vw, 70px);
+  color: #333;
+  height: 90px;
+  margin-bottom: 30px;
+}
+
+
+/* クメール語 */
+
+.khmer {
+  font-size: clamp(28px, 7vw, 50px);
+  color: #555;
+  min-height: 60px;
+  margin-bottom: 30px;
+}
+
+
+/* 三角ボタン */
+
+.answer-button {
+  font-size: clamp(50px, 12vw, 80px);
+  padding: 18px 40px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+
+/* カウンター */
+
+.counter {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  font-size: 16px;
+  color: #666;
+}
+
+
+/* Excel読み込み中 */
+
+.loading {
+  font-size: 24px;
+  color: #666;
+  margin-top: 50px;
+}
+
+
+@media (max-width: 600px) {
+
+  body {
+    padding: 10px;
+  }
+
+  .lesson-buttons {
+    gap: 8px;
+  }
+
+  .lesson-button {
+    font-size: 18px;
+    padding: 10px 12px;
+  }
+
+  .reading {
+    height: 100px;
+    margin-bottom: 20px;
+  }
+
+  .answer-button {
+    width: 90%;
+    max-width: 320px;
+  }
+
+}
+
+</style>
+
+
+<!-- SheetJS -->
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+
+<!-- Google Analytics -->
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DDD1Y5SELD"></script>
+
+<script>
+
+window.dataLayer = window.dataLayer || [];
+
+function gtag() {
+  dataLayer.push(arguments);
+}
+
+gtag('js', new Date());
+
+gtag('config', 'G-DDD1Y5SELD');
+
+</script>
+
+</head>
+
+
+<body>
+
+
+<!-- 課範囲選択 -->
+
+<div class="lesson-buttons">
+
+  <button
+    class="lesson-button active"
+    id="lesson6"
+    onclick="selectLessonRange(6)">
+    A1<br>1～6
+  </button>
+
+  <button
+    class="lesson-button"
+    id="lesson12"
+    onclick="selectLessonRange(12)">
+    A1<br>1～12
+  </button>
+
+  <button
+    class="lesson-button"
+    id="lesson18"
+    onclick="selectLessonRange(18)">
+    A1<br>1～18
+  </button>
+
+</div>
+
+
+<div
+  class="loading"
+  id="loading">
+
+  漢字データを読み込んでいます……
+
+</div>
+
+
+<div
+  class="question"
+  id="question">
+</div>
+
+
+<div
+  class="reading"
+  id="reading">
+</div>
+
+
+<div
+  class="khmer"
+  id="khmer">
+</div>
+
+
+<button
+  class="answer-button"
+  onclick="handle()">
+
+  ▶
+
+</button>
+
+
+<div
+  class="counter"
+  id="counter">
+
+  0
+
+</div>
+
+
+<script>
+
+
+/* =========================================
+   データ
+   ========================================= */
+
+let originalWords = [];
+
+let words = [];
+
+let currentIndex = 0;
+
+let revealed = false;
+
+let selectedMaxLesson = 6;
+
+
+/* =========================================
+   Excel読み込み
+   ========================================= */
+
+async function loadExcel() {
+
+  try {
+
+    const response =
+      await fetch("いろどり漢字.xlsx");
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Excelファイルを読み込めませんでした。"
+      );
+
+    }
+
+
+    const arrayBuffer =
+      await response.arrayBuffer();
+
+
+    const workbook =
+      XLSX.read(arrayBuffer, {
+        type: "array"
+      });
+
+
+    /*
+
+      使用するシート
+
+      現在は先頭のシートを使用
+
+    */
+
+    if (
+      !workbook.SheetNames ||
+      workbook.SheetNames.length === 0
+    ) {
+
+      throw new Error(
+        "Excelにシートがありません。"
+      );
+
+    }
+
+
+    const sheetName =
+      workbook.SheetNames[0];
+
+
+    const sheet =
+      workbook.Sheets[sheetName];
+
+
+    if (!sheet) {
+
+      throw new Error(
+        "Excelのシートを取得できませんでした。"
+      );
+
+    }
+
+
+    /*
+     * Excelを配列として取得
+     *
+     * A列：課番号
+     * B列：漢字
+     * C列：読み方
+     * D列：クメール語
+     */
+
+    const rows =
+      XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: ""
+      });
+
+
+    if (rows.length < 2) {
+
+      throw new Error(
+        "Excelに漢字データがありません。"
+      );
+
+    }
+
+
+    originalWords = [];
+
+
+    /*
+     * 1行目は見出し
+     *
+     * 2行目から読み込む
+     */
+
+    for (
+      let i = 1;
+      i < rows.length;
+      i++
+    ) {
+
+      const row = rows[i];
+
+
+      if (!row) {
+        continue;
+      }
+
+
+      /*
+       * A～D列を取得
+       */
+
+      const lesson =
+        String(row[0] ?? "").trim();
+
+      const kanji =
+        String(row[1] ?? "").trim();
+
+      const reading =
+        String(row[2] ?? "").trim();
+
+      const khmer =
+        String(row[3] ?? "").trim();
+
+
+      /*
+       * 漢字が空欄なら無視
+       */
+
+      if (kanji === "") {
+        continue;
+      }
+
+
+      /*
+       * 課番号が空欄なら無視
+       */
+
+      if (lesson === "") {
+        continue;
+      }
+
+
+      originalWords.push({
+
+        lesson: lesson,
+
+        w: kanji,
+
+        r: reading,
+
+        k: khmer
+
+      });
+
+    }
+
+
+    /*
+     * データが1件もない場合
+     */
+
+    if (originalWords.length === 0) {
+
+      throw new Error(
+        "漢字データが見つかりませんでした。"
+      );
+
+    }
+
+
+    /*
+     * 読み込み完了
+     */
+
+    document.getElementById(
+      "loading"
+    ).style.display = "none";
+
+
+    /*
+     * 初期範囲
+     *
+     * 1～6課
+     */
+
+    createWords();
+
+    render();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    document.getElementById(
+      "loading"
+    ).textContent =
+      "いろどり漢字.xlsxを読み込めませんでした。";
+
+  }
+
+}
+
+
+/* =========================================
+   課番号を数値に変換
+   ========================================= */
+
+function getLessonNumber(lesson) {
+
+  /*
+   * 「1」
+   * 「1課」
+   * 「第1課」
+   *
+   * などから数字を取得
+   */
+
+  const match =
+    String(lesson).match(/\d+/);
+
+
+  if (!match) {
+    return NaN;
+  }
+
+
+  return parseInt(
+    match[0],
+    10
+  );
+
+}
+
+
+/* =========================================
+   課範囲選択
+   ========================================= */
+
+function selectLessonRange(maxLesson) {
+
+  selectedMaxLesson =
+    maxLesson;
+
+
+  /*
+   * ボタンのON/OFF
+   */
+
+  document.getElementById(
+    "lesson6"
+  ).classList.toggle(
+    "active",
+    maxLesson === 6
+  );
+
+
+  document.getElementById(
+    "lesson12"
+  ).classList.toggle(
+    "active",
+    maxLesson === 12
+  );
+
+
+  document.getElementById(
+    "lesson18"
+  ).classList.toggle(
+    "active",
+    maxLesson === 18
+  );
+
+
+  /*
+   * 選択された範囲の問題を作成
+   */
+
+  createWords();
+
+
+  /*
+   * 最初の問題から開始
+   */
+
+  currentIndex = 0;
+
+  revealed = false;
+
+
+  render();
+
+}
+
+
+/* =========================================
+   選択された課の問題を作成
+   ========================================= */
+
+function createWords() {
+
+  const filteredWords =
+    originalWords.filter(word => {
+
+      const lessonNumber =
+        getLessonNumber(word.lesson);
+
+
+      return (
+        !isNaN(lessonNumber) &&
+        lessonNumber >= 1 &&
+        lessonNumber <= selectedMaxLesson
+      );
+
+    });
+
+
+  words =
+    smartShuffle(
+      [...filteredWords]
+    );
+
+
+  currentIndex = 0;
+
+  revealed = false;
+
+}
+
+
+/* =========================================
+   スマートシャッフル
+   ========================================= */
+
+function smartShuffle(arr) {
+
+  const result = [];
+
+  const pool = [...arr];
+
+  let lastLesson = null;
+
+
+  while (pool.length > 0) {
+
+    /*
+     * 前回と違う課を優先
+     */
+
+    let candidates =
+      pool.filter(
+        word =>
+          word.lesson !== lastLesson
+      );
+
+
+    /*
+     * 選べる課がない場合
+     * 同じ課も候補にする
+     */
+
+    if (candidates.length === 0) {
+
+      candidates = pool;
+
+    }
+
+
+    /*
+     * ランダムに1問選択
+     */
+
+    const pick =
+      candidates[
+        Math.floor(
+          Math.random() *
+          candidates.length
+        )
+      ];
+
+
+    result.push(pick);
+
+
+    /*
+     * 選択した問題をpoolから削除
+     */
+
+    const index =
+      pool.indexOf(pick);
+
+
+    if (index !== -1) {
+
+      pool.splice(index, 1);
+
+    }
+
+
+    lastLesson =
+      pick.lesson;
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================
+   表示更新
+   ========================================= */
+
+function render() {
+
+  /*
+   * 問題がない場合
+   */
+
+  if (words.length === 0) {
+
+    document.getElementById(
+      "question"
+    ).textContent = "";
+
+
+    document.getElementById(
+      "reading"
+    ).textContent = "";
+
+
+    document.getElementById(
+      "khmer"
+    ).textContent = "";
+
+
+    document.getElementById(
+      "counter"
+    ).textContent = "0";
+
+
+    return;
+
+  }
+
+
+  const word =
+    words[currentIndex];
+
+
+  /*
+   * 漢字
+   *
+   * 常に表示
+   */
+
+  document.getElementById(
+    "question"
+  ).textContent =
+    word.w;
+
+
+  /*
+   * カウンター
+   */
+
+  document.getElementById(
+    "counter"
+  ).textContent =
+    currentIndex + 1;
+
+
+  /*
+   * 読み方
+   *
+   * ▶を1回押すまで非表示
+   */
+
+  document.getElementById(
+    "reading"
+  ).textContent =
+    revealed
+      ? word.r
+      : "";
+
+
+  /*
+   * クメール語
+   *
+   * ▶を1回押すまで非表示
+   */
+
+  document.getElementById(
+    "khmer"
+  ).textContent =
+    revealed
+      ? word.k
+      : "";
+
+}
+
+
+/* =========================================
+   三角ボタン
+   ========================================= */
+
+function handle() {
+
+  /*
+   * 問題がない場合
+   */
+
+  if (words.length === 0) {
+    return;
+  }
+
+
+  /*
+   * まだ答えを表示していない
+   */
+
+  if (!revealed) {
+
+    revealed = true;
+
+    render();
+
+    return;
+
+  }
+
+
+  /*
+   * 答えを表示済み
+   *
+   * → 次の問題
+   */
+
+  currentIndex++;
+
+
+  /*
+   * 最後まで行った場合
+   */
+
+  if (
+    currentIndex >= words.length
+  ) {
+
+    /*
+     * 同じ範囲の問題を
+     * もう一度シャッフル
+     */
+
+    words =
+      smartShuffle(
+        [...words]
+      );
+
+
+    currentIndex = 0;
+
+  }
+
+
+  revealed = false;
+
+  render();
+
+}
+
+
+/* =========================================
+   起動
+   ========================================= */
+
+loadExcel();
+
+
+</script>
+
+</body>
+
+</html>
