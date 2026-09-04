@@ -47,9 +47,13 @@ body {
 /* 漢字 */
 
 .question {
-  font-size: clamp(100px, 30vw, 200px);
+  font-size: clamp(60px, 30vw, 200px);
   margin: 40px 0 10px;
   line-height: 1.1;
+  white-space: nowrap;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 
@@ -763,8 +767,47 @@ function render() {
       ? word.k
       : "";
 
+  adjustQuestionSize();
 }
 
+/* =========================================
+   漢字のサイズ自動調整
+   ========================================= */
+
+function adjustQuestionSize() {
+
+  const question =
+    document.getElementById("question");
+
+  /*
+   * 一度最大サイズに戻す
+   */
+  question.style.fontSize = "200px";
+
+  /*
+   * 画面幅に収まるまで縮小
+   */
+  const maxWidth =
+    question.clientWidth;
+
+  while (
+    question.scrollWidth > maxWidth &&
+    parseFloat(
+      getComputedStyle(question).fontSize
+    ) > 60
+  ) {
+
+    const currentSize =
+      parseFloat(
+        getComputedStyle(question).fontSize
+      );
+
+    question.style.fontSize =
+      (currentSize - 2) + "px";
+
+  }
+
+}
 
 /* =========================================
    三角ボタン
