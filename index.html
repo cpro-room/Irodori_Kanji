@@ -781,10 +781,26 @@ function adjustQuestionSize() {
   const question =
     document.getElementById("question");
 
+  const text =
+    question.textContent;
+
   /*
-   * 一度最大サイズに戻す
+   * 1～4文字は常に200px
+   */
+  if (text.length <= 4) {
+
+    question.style.fontSize = "200px";
+
+    return;
+  }
+
+
+  /*
+   * 5文字以上の場合
+   * まず200pxに戻す
    */
   question.style.fontSize = "200px";
+
 
   /*
    * 画面幅に収まるまで縮小
@@ -792,11 +808,12 @@ function adjustQuestionSize() {
   const maxWidth =
     question.clientWidth;
 
+
   while (
     question.scrollWidth > maxWidth &&
     parseFloat(
       getComputedStyle(question).fontSize
-    ) > 60
+    ) > 40
   ) {
 
     const currentSize =
