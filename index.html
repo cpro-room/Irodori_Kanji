@@ -195,20 +195,20 @@ gtag('config', 'G-DDD1Y5SELD');
 <div class="lesson-buttons">
   <button class="lesson-button" id="a1-l1-6"
     onclick="selectLessonRange('A1', 'L1~6')">L1~6</button>
-  <button class="lesson-button" id="a1-l7-12"
-    onclick="selectLessonRange('A1', 'L7~12')">L7~12</button>
-  <button class="lesson-button" id="a1-l13-18"
-    onclick="selectLessonRange('A1', 'L13~18')">L13~18</button>
+  <button class="lesson-button" id="a1-l1-12"
+    onclick="selectLessonRange('A1', 'L1~12')">L1~12</button>
+  <button class="lesson-button" id="a1-l1-18"
+    onclick="selectLessonRange('A1', 'L1~18')">L1~18</button>
 </div>
 
 <div class="course-title">A2.1</div>
 <div class="lesson-buttons">
   <button class="lesson-button" id="a21-l1-6"
     onclick="selectLessonRange('A2.1', 'L1~6')">L1~6</button>
-  <button class="lesson-button" id="a21-l7-12"
-    onclick="selectLessonRange('A2.1', 'L7~12')">L7~12</button>
-  <button class="lesson-button" id="a21-l13-18"
-    onclick="selectLessonRange('A2.1', 'L13~18')">L13~18</button>
+  <button class="lesson-button" id="a21-l1-12"
+    onclick="selectLessonRange('A2.1', 'L1~12')">L1~12</button>
+  <button class="lesson-button" id="a21-l1-18"
+    onclick="selectLessonRange('A2.1', 'L1~18')">L1~18</button>
 </div>
 
 
@@ -499,8 +499,8 @@ async function loadExcel() {
 function normalizeLessonRange(value) {
   return String(value ?? "")
     .trim()
-    .replace(/[～〜−－]/g, "~")
-    .replace(/\\s+/g, "")
+    .replace(/[～〜−－~]/g, "-")
+    .replace(/\s+/g, "")
     .toUpperCase();
 }
 
@@ -520,11 +520,11 @@ function selectLessonRange(course, lessonRange) {
 
   const buttonIds = [
     "a1-l1-6",
-    "a1-l7-12",
-    "a1-l13-18",
+    "a1-l1-12",
+    "a1-l1-18",
     "a21-l1-6",
-    "a21-l7-12",
-    "a21-l13-18"
+    "a21-l1-12",
+    "a21-l1-18"
   ];
 
   buttonIds.forEach(id => {
@@ -533,7 +533,7 @@ function selectLessonRange(course, lessonRange) {
 
   const selectedButtonId =
     (course === "A1" ? "a1-" : "a21-") +
-    lessonRange.toLowerCase().replace("~", "-").replace("l", "l");
+    lessonRange.toLowerCase().replace("~", "-");
 
   const selectedButton = document.getElementById(selectedButtonId);
   if (selectedButton) {
@@ -563,12 +563,28 @@ function selectLessonRange(course, lessonRange) {
 
 function createWords() {
 
+  const selectedEndMatch =
+    normalizeLessonRange(selectedLessonRange).match(/L1-(\d+)/);
+  const selectedEnd = selectedEndMatch
+    ? Number(selectedEndMatch[1])
+    : 0;
+
   const filteredWords =
     originalWords.filter(word => {
+      const storedRange = normalizeLessonRange(word.lessonRange);
+      const storedMatch = storedRange.match(/L(\d+)-(\d+)/);
+
+      if (!storedMatch) {
+        return false;
+      }
+
+      const storedStart = Number(storedMatch[1]);
+      const storedEnd = Number(storedMatch[2]);
+
       return (
         word.course === selectedCourse &&
-        normalizeLessonRange(word.lessonRange) ===
-          normalizeLessonRange(selectedLessonRange)
+        storedStart >= 1 &&
+        storedEnd <= selectedEnd
       );
     });
 
