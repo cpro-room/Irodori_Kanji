@@ -56,6 +56,7 @@ body {
 /* 漢字 */
 
 .question {
+  display: none;
   font-size: clamp(60px, 30vw, 200px);
   margin: 40px 0 10px;
   line-height: 1.1;
@@ -69,6 +70,7 @@ body {
 /* 読み方 */
 
 .reading {
+  display: none;
   font-size: clamp(40px, 10vw, 70px);
   color: #333;
   height: 90px;
@@ -79,6 +81,7 @@ body {
 /* クメール語 */
 
 .khmer {
+  display: none;
   font-size: clamp(28px, 7vw, 50px);
   color: #555;
   min-height: 60px;
@@ -89,6 +92,7 @@ body {
 /* 三角ボタン */
 
 .answer-button {
+  display: none;
   font-size: clamp(50px, 12vw, 80px);
   padding: 18px 40px;
   border: none;
@@ -100,6 +104,7 @@ body {
 /* カウンター */
 
 .counter {
+  display: none;
   position: fixed;
   right: 10px;
   bottom: 10px;
@@ -139,11 +144,13 @@ body {
   }
 
   .reading {
+  display: none;
     height: 100px;
     margin-bottom: 20px;
   }
 
   .answer-button {
+  display: none;
     width: 90%;
     max-width: 320px;
   }
@@ -186,7 +193,7 @@ gtag('config', 'G-DDD1Y5SELD');
 
 <div class="course-title">A1</div>
 <div class="lesson-buttons">
-  <button class="lesson-button active" id="a1-l1-6"
+  <button class="lesson-button" id="a1-l1-6"
     onclick="selectLessonRange('A1', 'L1~6')">L1~6</button>
   <button class="lesson-button" id="a1-l7-12"
     onclick="selectLessonRange('A1', 'L7~12')">L7~12</button>
@@ -465,14 +472,9 @@ async function loadExcel() {
 
 
     /*
-     * 初期範囲
-     *
-     * 1～6課
+     * 起動時はコース・課範囲の選択画面だけを表示
+     * ボタンを押すと問題画面を開始する
      */
-
-    createWords();
-
-    render();
 
 
   } catch (error) {
@@ -533,12 +535,19 @@ function selectLessonRange(course, lessonRange) {
     (course === "A1" ? "a1-" : "a21-") +
     lessonRange.toLowerCase().replace("~", "-").replace("l", "l");
 
-  document.getElementById(selectedButtonId).classList.add("active");
+  const selectedButton = document.getElementById(selectedButtonId);
+  if (selectedButton) {
+    selectedButton.classList.add("active");
+  }
 
-  /*
-   * 選択されたコース・課範囲の問題を作成
-   */
+  /* 選択後に漢字・解答ボタン・カウンターを表示 */
+  document.getElementById("question").style.display = "block";
+  document.getElementById("reading").style.display = "block";
+  document.getElementById("khmer").style.display = "block";
+  document.querySelector(".answer-button").style.display = "inline-block";
+  document.getElementById("counter").style.display = "block";
 
+  /* 選択されたコース・課範囲の問題を作成 */
   createWords();
 
   currentIndex = 0;
