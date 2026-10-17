@@ -349,7 +349,7 @@ async function loadExcel() {
      * Excelを配列として取得
      *
      * A列：コース名
-     * B列：課範囲
+     * B列：課番号（数値）
      * C列：漢字
      * D列：読み方
      * E列：クメール語
@@ -402,7 +402,7 @@ async function loadExcel() {
         String(row[0] ?? "").trim();
 
       const lessonRange =
-        String(row[1] ?? "").trim();
+        Number(row[1]);
 
       const kanji =
         String(row[2] ?? "").trim();
@@ -424,10 +424,14 @@ async function loadExcel() {
 
 
       /*
-       * コース名または課範囲が空欄なら無視
+       * コース名または課番号が不正なら無視
        */
 
-      if (course === "" || lessonRange === "") {
+      if (
+        course === "" ||
+        !Number.isFinite(lessonRange) ||
+        lessonRange < 1
+      ) {
         continue;
       }
 
@@ -563,28 +567,33 @@ function selectLessonRange(course, lessonRange) {
 
 function createWords() {
 
+  /*
+   * 選択されたボタンの末尾から課番号の上限を取得
+   * 例：L1~6 → 6、L1~12 → 12、L1~18 → 18
+   */
+
   const selectedEndMatch =
     normalizeLessonRange(selectedLessonRange).match(/L1-(\d+)/);
+
   const selectedEnd = selectedEndMatch
     ? Number(selectedEndMatch[1])
     : 0;
 
+  /*
+   * ExcelのB列は「L1~6」のような範囲名ではなく、
+   * 1、2、3……という課番号。
+   * そのため、選択した上限までの課番号をまとめて表示する。
+   */
+
   const filteredWords =
     originalWords.filter(word => {
-      const storedRange = normalizeLessonRange(word.lessonRange);
-      const storedMatch = storedRange.match(/L(\d+)-(\d+)/);
-
-      if (!storedMatch) {
-        return false;
-      }
-
-      const storedStart = Number(storedMatch[1]);
-      const storedEnd = Number(storedMatch[2]);
+      const lessonNumber = Number(word.lessonRange);
 
       return (
         word.course === selectedCourse &&
-        storedStart >= 1 &&
-        storedEnd <= selectedEnd
+        Number.isFinite(lessonNumber) &&
+        lessonNumber >= 1 &&
+        lessonNumber <= selectedEnd
       );
     });
 
