@@ -26,6 +26,15 @@ body {
   margin: 10px 0 12px;
 }
 
+/* 選択後に表示する範囲名 */
+
+.selected-range-title {
+  display: none;
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0 0 10px;
+}
+
 /* 課選択ボタン */
 
 .lesson-buttons {
@@ -57,8 +66,8 @@ body {
 
 .question {
   display: none;
-  font-size: clamp(60px, 30vw, 200px);
-  margin: 40px 0 10px;
+  font-size: clamp(80px, 35vw, 220px);
+  margin: 20px 0 10px;
   line-height: 1.1;
   white-space: nowrap;
   width: 100%;
@@ -74,7 +83,11 @@ body {
   font-size: clamp(40px, 10vw, 70px);
   color: #333;
   height: 90px;
-  margin-bottom: 30px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
 
@@ -84,8 +97,12 @@ body {
   display: none;
   font-size: clamp(28px, 7vw, 50px);
   color: #555;
-  min-height: 60px;
-  margin-bottom: 30px;
+  height: 90px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
 
@@ -101,17 +118,16 @@ body {
 }
 
 
-/* カウンター */
-
+/* 右上の問題数カウンター */
 .counter {
   display: none;
   position: fixed;
-  right: 10px;
-  bottom: 10px;
-  font-size: 16px;
-  color: #666;
+  top: 10px;
+  right: 15px;
+  font-size: 40px;
+  color: #888;
+  z-index: 1000;
 }
-
 
 /* Excel読み込み中 */
 
@@ -143,14 +159,21 @@ body {
     font-size: 24px;
   }
 
+  .selected-range-title {
+    font-size: 24px;
+  }
+
   .reading {
-  display: none;
-    height: 100px;
+    height: 90px;
+    margin-bottom: 20px;
+  }
+
+  .khmer {
+    height: 90px;
     margin-bottom: 20px;
   }
 
   .answer-button {
-  display: none;
     width: 90%;
     max-width: 320px;
   }
@@ -211,6 +234,7 @@ gtag('config', 'G-DDD1Y5SELD');
     onclick="selectLessonRange('A2.1', 'L1~18')">L1~18</button>
 </div>
 
+<div class="selected-range-title" id="selected-range-title"></div>
 
 <div
   class="loading"
@@ -272,6 +296,8 @@ let currentIndex = 0;
 
 let revealed = false;
 
+let questionCount = 0;
+
 let selectedCourse = 'A1';
 
 let selectedLessonRange = 'L1~6';
@@ -309,11 +335,8 @@ async function loadExcel() {
 
 
     /*
-
       使用するシート
-
       現在は先頭のシートを使用
-
     */
 
     if (
@@ -376,7 +399,6 @@ async function loadExcel() {
 
     /*
      * 1行目は見出し
-     *
      * 2行目から読み込む
      */
 
@@ -518,6 +540,18 @@ function selectLessonRange(course, lessonRange) {
   selectedCourse = course;
   selectedLessonRange = lessonRange;
 
+  /* 選択画面を隠し、選択した範囲名だけを上部に表示 */
+  document.querySelectorAll(".course-title, .lesson-buttons").forEach(element => {
+    element.style.display = "none";
+  });
+
+  const rangeTitle = document.getElementById("selected-range-title");
+
+  rangeTitle.textContent = course + "  " + lessonRange;
+
+  rangeTitle.style.display = "block";
+
+
   /*
    * 6個のボタンのON/OFF
    */
@@ -540,24 +574,35 @@ function selectLessonRange(course, lessonRange) {
     lessonRange.toLowerCase().replace("~", "-");
 
   const selectedButton = document.getElementById(selectedButtonId);
+
   if (selectedButton) {
     selectedButton.classList.add("active");
   }
 
+
   /* 選択後に漢字・解答ボタン・カウンターを表示 */
+
   document.getElementById("question").style.display = "block";
-  document.getElementById("reading").style.display = "block";
-  document.getElementById("khmer").style.display = "block";
+
+  document.getElementById("reading").style.display = "flex";
+
+  document.getElementById("khmer").style.display = "flex";
+
   document.querySelector(".answer-button").style.display = "inline-block";
+
   document.getElementById("counter").style.display = "block";
 
+
   /* 選択されたコース・課範囲の問題を作成 */
+
   createWords();
 
   currentIndex = 0;
+
   revealed = false;
 
   render();
+
 }
 
 
@@ -568,7 +613,7 @@ function selectLessonRange(course, lessonRange) {
 function createWords() {
 
   /*
-   * 選択されたボタンの末尾から課番号の上限を取得
+   * 選択した範囲の上限を取得
    * 例：L1~6 → 6、L1~12 → 12、L1~18 → 18
    */
 
@@ -579,14 +624,15 @@ function createWords() {
     ? Number(selectedEndMatch[1])
     : 0;
 
+
   /*
-   * ExcelのB列は「L1~6」のような範囲名ではなく、
-   * 1、2、3……という課番号。
-   * そのため、選択した上限までの課番号をまとめて表示する。
+   * ExcelのB列は課番号（1、2、3……）。
+   * 選択した上限までの課番号をまとめて表示する。
    */
 
   const filteredWords =
     originalWords.filter(word => {
+
       const lessonNumber = Number(word.lessonRange);
 
       return (
@@ -595,7 +641,9 @@ function createWords() {
         lessonNumber >= 1 &&
         lessonNumber <= selectedEnd
       );
+
     });
+
 
   words =
     smartShuffle(
@@ -603,7 +651,9 @@ function createWords() {
     );
 
   currentIndex = 0;
+
   revealed = false;
+
 }
 
 
@@ -730,8 +780,6 @@ function render() {
 
   /*
    * 漢字
-   *
-   * 常に表示
    */
 
   document.getElementById(
@@ -752,8 +800,7 @@ function render() {
 
   /*
    * 読み方
-   *
-   * ▶を1回押すまで非表示
+   * ▶を1回押すまで文字を表示しない
    */
 
   document.getElementById(
@@ -766,8 +813,7 @@ function render() {
 
   /*
    * クメール語
-   *
-   * ▶を1回押すまで非表示
+   * ▶を1回押すまで文字を表示しない
    */
 
   document.getElementById(
@@ -777,8 +823,11 @@ function render() {
       ? word.k
       : "";
 
+
   adjustQuestionSize();
+
 }
+
 
 /* =========================================
    漢字のサイズ自動調整
@@ -792,27 +841,32 @@ function adjustQuestionSize() {
   const text =
     question.textContent;
 
+
   /*
-   * 1～4文字は常に200px
+   * 1～4文字は160px
    */
+
   if (text.length <= 4) {
 
-    question.style.fontSize = "100px";
+    question.style.fontSize = "160px";
 
     return;
+
   }
 
 
   /*
    * 5文字以上の場合
-   * まず200pxに戻す
+   * まず160pxに戻す
    */
-  question.style.fontSize = "100px";
+
+  question.style.fontSize = "160px";
 
 
   /*
    * 画面幅に収まるまで縮小
    */
+
   const maxWidth =
     question.clientWidth;
 
@@ -836,6 +890,7 @@ function adjustQuestionSize() {
 
 }
 
+
 /* =========================================
    三角ボタン
    ========================================= */
@@ -850,27 +905,20 @@ function handle() {
     return;
   }
 
-
-  /*
-   * まだ答えを表示していない
-   */
-
-  if (!revealed) {
+if (!revealed) {
 
     revealed = true;
+
+    questionCount++;
+
+    document.getElementById("counter").textContent =
+      questionCount;
 
     render();
 
     return;
 
   }
-
-
-  /*
-   * 答えを表示済み
-   *
-   * → 次の問題
-   */
 
   currentIndex++;
 
@@ -884,8 +932,7 @@ function handle() {
   ) {
 
     /*
-     * 同じ範囲の問題を
-     * もう一度シャッフル
+     * 同じ範囲の問題をもう一度シャッフル
      */
 
     words =
