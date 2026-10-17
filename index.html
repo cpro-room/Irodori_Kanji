@@ -18,13 +18,21 @@ body {
 }
 
 
+/* コース名 */
+
+.course-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 10px 0 12px;
+}
+
 /* 課選択ボタン */
 
 .lesson-buttons {
   display: flex;
   justify-content: center;
   gap: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .lesson-button {
@@ -117,12 +125,17 @@ body {
 
   .lesson-buttons {
     gap: 8px;
+    margin-bottom: 20px;
   }
 
   .lesson-button {
-    font-size: 24px;
-    padding: 14px 20px;
+    font-size: 20px;
+    padding: 14px 8px;
     flex: 1;
+  }
+
+  .course-title {
+    font-size: 24px;
   }
 
   .reading {
@@ -169,31 +182,26 @@ gtag('config', 'G-DDD1Y5SELD');
 <body>
 
 
-<!-- 課範囲選択 -->
+<!-- コース・課範囲選択 -->
 
+<div class="course-title">A1</div>
 <div class="lesson-buttons">
+  <button class="lesson-button active" id="a1-l1-6"
+    onclick="selectLessonRange('A1', 'L1~6')">L1~6</button>
+  <button class="lesson-button" id="a1-l7-12"
+    onclick="selectLessonRange('A1', 'L7~12')">L7~12</button>
+  <button class="lesson-button" id="a1-l13-18"
+    onclick="selectLessonRange('A1', 'L13~18')">L13~18</button>
+</div>
 
-  <button
-    class="lesson-button active"
-    id="lesson6"
-    onclick="selectLessonRange(6)">
-    A1<br>L1～6
-  </button>
-
-  <button
-    class="lesson-button"
-    id="lesson12"
-    onclick="selectLessonRange(12)">
-    A1<br>L1～12
-  </button>
-
-  <button
-    class="lesson-button"
-    id="lesson18"
-    onclick="selectLessonRange(18)">
-    A1<br>L1～18
-  </button>
-
+<div class="course-title">A2.1</div>
+<div class="lesson-buttons">
+  <button class="lesson-button" id="a21-l1-6"
+    onclick="selectLessonRange('A2.1', 'L1~6')">L1~6</button>
+  <button class="lesson-button" id="a21-l7-12"
+    onclick="selectLessonRange('A2.1', 'L7~12')">L7~12</button>
+  <button class="lesson-button" id="a21-l13-18"
+    onclick="selectLessonRange('A2.1', 'L13~18')">L13~18</button>
 </div>
 
 
@@ -257,7 +265,9 @@ let currentIndex = 0;
 
 let revealed = false;
 
-let selectedMaxLesson = 6;
+let selectedCourse = 'A1';
+
+let selectedLessonRange = 'L1~6';
 
 
 /* =========================================
@@ -331,10 +341,11 @@ async function loadExcel() {
     /*
      * Excelを配列として取得
      *
-     * A列：課番号
-     * B列：漢字
-     * C列：読み方
-     * D列：クメール語
+     * A列：コース名
+     * B列：課範囲
+     * C列：漢字
+     * D列：読み方
+     * E列：クメール語
      */
 
     const rows =
@@ -377,20 +388,23 @@ async function loadExcel() {
 
 
       /*
-       * A～D列を取得
+       * A～E列を取得
        */
 
-      const lesson =
+      const course =
         String(row[0] ?? "").trim();
 
-      const kanji =
+      const lessonRange =
         String(row[1] ?? "").trim();
 
-      const reading =
+      const kanji =
         String(row[2] ?? "").trim();
 
-      const khmer =
+      const reading =
         String(row[3] ?? "").trim();
+
+      const khmer =
+        String(row[4] ?? "").trim();
 
 
       /*
@@ -403,17 +417,19 @@ async function loadExcel() {
 
 
       /*
-       * 課番号が空欄なら無視
+       * コース名または課範囲が空欄なら無視
        */
 
-      if (lesson === "") {
+      if (course === "" || lessonRange === "") {
         continue;
       }
 
 
       originalWords.push({
 
-        lesson: lesson,
+        course: course,
+
+        lessonRange: lessonRange,
 
         w: kanji,
 
@@ -475,33 +491,15 @@ async function loadExcel() {
 
 
 /* =========================================
-   課番号を数値に変換
+   課範囲選択
    ========================================= */
 
-function getLessonNumber(lesson) {
-
-  /*
-   * 「1」
-   * 「1課」
-   * 「第1課」
-   *
-   * などから数字を取得
-   */
-
-  const match =
-    String(lesson).match(/\d+/);
-
-
-  if (!match) {
-    return NaN;
-  }
-
-
-  return parseInt(
-    match[0],
-    10
-  );
-
+function normalizeLessonRange(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/[～〜−－]/g, "~")
+    .replace(/\\s+/g, "")
+    .toUpperCase();
 }
 
 
@@ -509,93 +507,69 @@ function getLessonNumber(lesson) {
    課範囲選択
    ========================================= */
 
-function selectLessonRange(maxLesson) {
+function selectLessonRange(course, lessonRange) {
 
-  selectedMaxLesson =
-    maxLesson;
-
+  selectedCourse = course;
+  selectedLessonRange = lessonRange;
 
   /*
-   * ボタンのON/OFF
+   * 6個のボタンのON/OFF
    */
 
-  document.getElementById(
-    "lesson6"
-  ).classList.toggle(
-    "active",
-    maxLesson === 6
-  );
+  const buttonIds = [
+    "a1-l1-6",
+    "a1-l7-12",
+    "a1-l13-18",
+    "a21-l1-6",
+    "a21-l7-12",
+    "a21-l13-18"
+  ];
 
+  buttonIds.forEach(id => {
+    document.getElementById(id).classList.remove("active");
+  });
 
-  document.getElementById(
-    "lesson12"
-  ).classList.toggle(
-    "active",
-    maxLesson === 12
-  );
+  const selectedButtonId =
+    (course === "A1" ? "a1-" : "a21-") +
+    lessonRange.toLowerCase().replace("~", "-").replace("l", "l");
 
-
-  document.getElementById(
-    "lesson18"
-  ).classList.toggle(
-    "active",
-    maxLesson === 18
-  );
-
+  document.getElementById(selectedButtonId).classList.add("active");
 
   /*
-   * 選択された範囲の問題を作成
+   * 選択されたコース・課範囲の問題を作成
    */
 
   createWords();
 
-
-  /*
-   * 最初の問題から開始
-   */
-
   currentIndex = 0;
-
   revealed = false;
 
-
   render();
-
 }
 
 
 /* =========================================
-   選択された課の問題を作成
+   選択されたコース・課範囲の問題を作成
    ========================================= */
 
 function createWords() {
 
   const filteredWords =
     originalWords.filter(word => {
-
-      const lessonNumber =
-        getLessonNumber(word.lesson);
-
-
       return (
-        !isNaN(lessonNumber) &&
-        lessonNumber >= 1 &&
-        lessonNumber <= selectedMaxLesson
+        word.course === selectedCourse &&
+        normalizeLessonRange(word.lessonRange) ===
+          normalizeLessonRange(selectedLessonRange)
       );
-
     });
-
 
   words =
     smartShuffle(
       [...filteredWords]
     );
 
-
   currentIndex = 0;
-
   revealed = false;
-
 }
 
 
@@ -609,7 +583,7 @@ function smartShuffle(arr) {
 
   const pool = [...arr];
 
-  let lastLesson = null;
+  let lastLessonRange = null;
 
 
   while (pool.length > 0) {
@@ -621,7 +595,7 @@ function smartShuffle(arr) {
     let candidates =
       pool.filter(
         word =>
-          word.lesson !== lastLesson
+          word.lessonRange !== lastLessonRange
       );
 
 
@@ -668,8 +642,8 @@ function smartShuffle(arr) {
     }
 
 
-    lastLesson =
-      pick.lesson;
+    lastLessonRange =
+      pick.lessonRange;
 
   }
 
