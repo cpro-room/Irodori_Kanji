@@ -66,15 +66,15 @@ body {
 
 .question {
   display: none;
-  font-size: clamp(80px, 35vw, 220px);
+  font-size: 160px;
   margin: 20px 0 10px;
   line-height: 1.1;
   white-space: nowrap;
   width: 100%;
+  max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
-
 
 /* 読み方 */
 
@@ -828,7 +828,6 @@ function render() {
 
 }
 
-
 /* =========================================
    漢字のサイズ自動調整
    ========================================= */
@@ -838,58 +837,31 @@ function adjustQuestionSize() {
   const question =
     document.getElementById("question");
 
-  const text =
-    question.textContent;
-
-
-  /*
-   * 1～4文字は160px
-   */
-
-  if (text.length <= 4) {
-
-    question.style.fontSize = "160px";
-
-    return;
-
-  }
-
-
-  /*
-   * 5文字以上の場合
-   * まず160pxに戻す
-   */
-
+  // 初期サイズ
   question.style.fontSize = "160px";
 
+  // 表示領域の幅
+  const maxWidth = question.clientWidth;
 
-  /*
-   * 画面幅に収まるまで縮小
-   */
+  if (maxWidth <= 0) {
+    return;
+  }
 
-  const maxWidth =
-    question.clientWidth;
-
+  // 画面幅に収まるまで縮小
+  let fontSize = 160;
 
   while (
     question.scrollWidth > maxWidth &&
-    parseFloat(
-      getComputedStyle(question).fontSize
-    ) > 40
+    fontSize > 20
   ) {
 
-    const currentSize =
-      parseFloat(
-        getComputedStyle(question).fontSize
-      );
+    fontSize -= 2;
 
-    question.style.fontSize =
-      (currentSize - 2) + "px";
+    question.style.fontSize = fontSize + "px";
 
   }
 
 }
-
 
 /* =========================================
    三角ボタン
