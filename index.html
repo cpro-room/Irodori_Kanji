@@ -58,7 +58,7 @@ body {
   box-sizing: border-box;
   border: 2px solid #999;
   border-radius: 12px;
-  background: #eee;
+  background: #d9efff;
   color: #333;
   cursor: pointer;
 }
@@ -304,6 +304,13 @@ gtag('config', 'G-DDD1Y5SELD');
 
 </div>
 
+<div id="end-screen" style="display: none;">
+  <div style="font-size: 40px; margin: 30px 0;">おわり</div>
+<button class="lesson-button" onclick="goHome()"
+  style="background: #4caf50; color: white; border-color: #4caf50;">
+  HOME
+</button>
+</div>
 
 <script>
 
@@ -941,36 +948,38 @@ if (!revealed) {
 
   currentIndex++;
 
-
-  /*
-   * 最後まで行った場合
-   */
-
-  if (
-    currentIndex >= words.length
-  ) {
-
-    /*
-     * 同じ範囲の問題をもう一度シャッフル
-     */
-
-    words =
-      smartShuffle(
-        [...words]
-      );
-
-
-    currentIndex = 0;
-
+  if (currentIndex >= words.length) {
+    document.getElementById("question").style.display = "none";
+    document.getElementById("reading").style.display = "none";
+    document.getElementById("khmer").style.display = "none";
+    document.querySelector(".answer-button").style.display = "none";
+    document.getElementById("counter").style.display = "none";
+    document.getElementById("selected-range-title").style.display = "none";
+    document.getElementById("end-screen").style.display = "block";
+    return;
   }
 
-
   revealed = false;
-
   render();
-
 }
 
+function goHome() {
+  document.getElementById("end-screen").style.display = "none";
+
+  document.querySelectorAll(".course-title, .lesson-buttons").forEach(element => {
+    element.style.display = "";
+  });
+
+  document.querySelectorAll(".lesson-button").forEach(button => {
+    button.classList.remove("active");
+  });
+
+  document.getElementById("question").style.display = "none";
+  document.getElementById("reading").style.display = "none";
+  document.getElementById("khmer").style.display = "none";
+  document.querySelector(".answer-button").style.display = "none";
+  document.getElementById("counter").style.display = "none";
+}
 
 /* =========================================
    起動
