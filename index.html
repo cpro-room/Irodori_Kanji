@@ -44,6 +44,12 @@ body {
   margin-bottom: 24px;
 }
 
+.lesson-button .lesson-count {
+  display: block;
+  font-size: 18px;
+  margin-top: 5px;
+}
+
 .lesson-button {
   font-size: 24px;
   line-height: 1.1;
@@ -156,6 +162,10 @@ body {
     flex: 1;
   }
 
+.lesson-button .lesson-count {
+  font-size: 15px;
+}
+
   .course-title {
     font-size: 24px;
   }
@@ -218,23 +228,34 @@ gtag('config', 'G-DDD1Y5SELD');
 <div class="course-title">A1</div>
 <div class="lesson-buttons">
   <button class="lesson-button" id="a1-l1-6"
-    onclick="selectLessonRange('A1', 'L1~6')">L1~6</button>
-  <button class="lesson-button" id="a1-l1-12"
-    onclick="selectLessonRange('A1', 'L1~12')">L1~12</button>
-  <button class="lesson-button" id="a1-l1-18"
-    onclick="selectLessonRange('A1', 'L1~18')">L1~18</button>
+    onclick="selectLessonRange('A1', 'L1~6')">
+    L1~6<br><span class="lesson-count" data-course="A1" data-start="1" data-end="6">0こ</span>
+  </button>
+  <button class="lesson-button" id="a1-l7-12"
+    onclick="selectLessonRange('A1', 'L7~12')">
+    L7~12<br><span class="lesson-count" data-course="A1" data-start="7" data-end="12">0こ</span>
+  </button>
+  <button class="lesson-button" id="a1-l13-18"
+    onclick="selectLessonRange('A1', 'L13~18')">
+    L13~18<br><span class="lesson-count" data-course="A1" data-start="13" data-end="18">0こ</span>
+  </button>
 </div>
 
 <div class="course-title">A2.1</div>
 <div class="lesson-buttons">
   <button class="lesson-button" id="a21-l1-6"
-    onclick="selectLessonRange('A2.1', 'L1~6')">L1~6</button>
-  <button class="lesson-button" id="a21-l1-12"
-    onclick="selectLessonRange('A2.1', 'L1~12')">L1~12</button>
-  <button class="lesson-button" id="a21-l1-18"
-    onclick="selectLessonRange('A2.1', 'L1~18')">L1~18</button>
+    onclick="selectLessonRange('A2.1', 'L1~6')">
+    L1~6<br><span class="lesson-count" data-course="A2.1" data-start="1" data-end="6">0こ</span>
+  </button>
+  <button class="lesson-button" id="a21-l7-12"
+    onclick="selectLessonRange('A2.1', 'L7~12')">
+    L7~12<br><span class="lesson-count" data-course="A2.1" data-start="7" data-end="12">0こ</span>
+  </button>
+  <button class="lesson-button" id="a21-l13-18"
+    onclick="selectLessonRange('A2.1', 'L13~18')">
+    L13~18<br><span class="lesson-count" data-course="A2.1" data-start="13" data-end="18">0こ</span>
+  </button>
 </div>
-
 <div class="selected-range-title" id="selected-range-title"></div>
 
 <div
@@ -493,6 +514,8 @@ async function loadExcel() {
      * 読み込み完了
      */
 
+updateLessonCounts();
+
     document.getElementById(
       "loading"
     ).style.display = "none";
@@ -531,6 +554,33 @@ function normalizeLessonRange(value) {
     .toUpperCase();
 }
 
+/* =========================================
+   各ボタンの問題数を表示
+   ========================================= */
+
+function updateLessonCounts() {
+
+  document.querySelectorAll(".lesson-count").forEach(element => {
+
+    const course = element.dataset.course;
+    const start = Number(element.dataset.start);
+    const end = Number(element.dataset.end);
+
+    const count = originalWords.filter(word => {
+      const lesson = Number(word.lessonRange);
+
+      return (
+        word.course === course &&
+        lesson >= start &&
+        lesson <= end
+      );
+    }).length;
+
+    element.textContent = count + "こ";
+
+  });
+
+}
 
 /* =========================================
    課範囲選択
@@ -557,14 +607,14 @@ function selectLessonRange(course, lessonRange) {
    * 6個のボタンのON/OFF
    */
 
-  const buttonIds = [
-    "a1-l1-6",
-    "a1-l1-12",
-    "a1-l1-18",
-    "a21-l1-6",
-    "a21-l1-12",
-    "a21-l1-18"
-  ];
+const buttonIds = [
+  "a1-l1-6",
+  "a1-l7-12",
+  "a1-l13-18",
+  "a21-l1-6",
+  "a21-l7-12",
+  "a21-l13-18"
+];
 
   buttonIds.forEach(id => {
     document.getElementById(id).classList.remove("active");
@@ -606,30 +656,30 @@ function selectLessonRange(course, lessonRange) {
 
 }
 
-
 /* =========================================
    選択されたコース・課範囲の問題を作成
    ========================================= */
 
 function createWords() {
 
-  /*
-   * 選択した範囲の上限を取得
-   * 例：L1~6 → 6、L1~12 → 12、L1~18 → 18
-   */
+  // 選択範囲の開始課・終了課を取得
+  // 例：L1~6 → 1～6
+  //     L7~12 → 7～12
+  //     L13~18 → 13～18
 
-  const selectedEndMatch =
-    normalizeLessonRange(selectedLessonRange).match(/L1-(\d+)/);
+  const selectedRange =
+    normalizeLessonRange(selectedLessonRange)
+      .match(/L(\d+)-(\d+)/);
 
-  const selectedEnd = selectedEndMatch
-    ? Number(selectedEndMatch[1])
-    : 0;
+  if (!selectedRange) {
+    words = [];
+    return;
+  }
 
+  const selectedStart = Number(selectedRange[1]);
+  const selectedEnd = Number(selectedRange[2]);
 
-  /*
-   * ExcelのB列は課番号（1、2、3……）。
-   * 選択した上限までの課番号をまとめて表示する。
-   */
+  // 選択したコース・課範囲の問題を抽出
 
   const filteredWords =
     originalWords.filter(word => {
@@ -639,24 +689,18 @@ function createWords() {
       return (
         word.course === selectedCourse &&
         Number.isFinite(lessonNumber) &&
-        lessonNumber >= 1 &&
+        lessonNumber >= selectedStart &&
         lessonNumber <= selectedEnd
       );
 
     });
 
-
-  words =
-    smartShuffle(
-      [...filteredWords]
-    );
+  words = smartShuffle([...filteredWords]);
 
   currentIndex = 0;
-
   revealed = false;
 
 }
-
 
 /* =========================================
    スマートシャッフル
