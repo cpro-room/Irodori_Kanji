@@ -224,6 +224,10 @@ body {
     font-weight: bold;
     cursor: pointer;
 }
+
+.portal-back-btn.hidden {
+    display: none;
+}
 </style>
 
 
@@ -297,13 +301,6 @@ gtag('config', 'G-DDD1Y5SELD');
 </div>
 <div class="selected-range-title" id="selected-range-title"></div>
 
-<button
-    type="button"
-    class="portal-back-btn"
-    onclick="location.href='https://cpro-room.github.io/JP-Learning/'">
-    Back
-</button>
-
 <div
   class="loading"
   id="loading">
@@ -338,6 +335,15 @@ gtag('config', 'G-DDD1Y5SELD');
   ▶
 
 </button>
+
+<div style="margin-top: 40px;">
+  <button
+      type="button"
+      class="portal-back-btn"
+      onclick="location.href='https://cpro-room.github.io/JP-Learning/'">
+      Back
+  </button>
+</div>
 
 
 <div
@@ -643,6 +649,7 @@ function selectLessonRange(course, lessonRange) {
 
   selectedCourse = course;
   selectedLessonRange = lessonRange;
+  document.querySelector(".portal-back-btn").classList.add("hidden");
 
   /* 選択画面を隠し、選択した範囲名だけを上部に表示 */
   document.querySelectorAll(".course-title, .lesson-buttons").forEach(element => {
@@ -1009,6 +1016,7 @@ if (!revealed) {
 
 function goHome() {
   document.getElementById("end-screen").style.display = "none";
+  document.querySelector(".portal-back-btn").classList.remove("hidden");
 
   document.querySelectorAll(".course-title, .lesson-buttons").forEach(element => {
     element.style.display = "";
